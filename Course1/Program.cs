@@ -1,28 +1,21 @@
 using Course1;
+using Course1.Infrastructure;
 using Course1.Properties.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHsts(options =>
+builder.Services.AddDbContext<DataContext>(options => 
 {
-    options.MaxAge = TimeSpan.FromDays(1);
-    options.IncludeSubDomains = true;
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DbConnection"));
 });
 
 var app = builder.Build();
 
-app.MapGet("/https", async context =>
-{
-    await context.Response.WriteAsync($"HTTPS Request: {context.Request.IsHttps}");
-});
+var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<DataContext>();
 
-app.UseHttpsRedirection();
-
-if (app.Environment.IsProduction())
-{
-    app.UseHsts();
-}
+SeedData.SeedDatabase(context);
 
 app.MapGet("/", () => "Hello World!");
 
